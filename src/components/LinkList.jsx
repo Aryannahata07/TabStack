@@ -9,6 +9,10 @@ import {
 } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { Bookmark } from "lucide-react";
+import { motion } from "framer-motion";
+import { Pencil, Trash2 } from "lucide-react";
+
+
 
 export default function LinkList({
   selectedCategoryId,
@@ -38,8 +42,8 @@ export default function LinkList({
     const unsubscribe = onSnapshot(ref, (snapshot) => {
       let fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      if (selectedCategoryId && selectedCategoryId !== "All Links") {
-        fetched = fetched.filter(link => link.categoryId === selectedCategoryId);
+      if (selectedCategoryId && selectedCategoryId !== "all") {
+          fetched = fetched.filter(link => link.categoryId === selectedCategoryId);
       }
 
       if (searchQuery) {
@@ -77,43 +81,49 @@ export default function LinkList({
   return (
     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
       {links.map((link) => (
-        <div
+        <motion.div
           key={link.id}
-          className="bg-gray-800 rounded-xl p-4 shadow hover:shadow-lg transition border border-gray-700"
+          initial={{ rotateY: 90, opacity: 0 }}
+          animate={{ rotateY: 0, opacity: 1 }}
+          transition={{ duration: 0.05, ease: "easeOut" }}
+          className="bg-gray-800 rounded-xl p-4 shadow-md border border-gray-700 transform transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:border-blue-600"
         >
           <div className="flex items-center gap-3 mb-2">
             <a
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white hover:underline text-sm font-semibold truncate"
+              className="text-shadow-gray-100 hover:underline text-sm font-bold truncate"
             >
               {link.title}
             </a>
           </div>
 
-          <p className="text-gray-400 text-xs truncate mb-3">
+          <p className="text-gray-400 text-xs truncate mb-2">
             {link.description}
           </p>
 
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => {
-                setLinkToEdit(link);
-                setIsLinkFormOpen(true);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded transition"
-            >
-              Edit
-            </button>
-            <button
-              onClick={() => handleDelete(link.id)}
-              className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded transition"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
+          <div className="flex justify-end gap-2 mt-3">
+              <button
+                onClick={() => {
+                  setLinkToEdit(link);
+                  setIsLinkFormOpen(true);
+                }}
+                className="flex items-center gap-1 border border-blue-500 text-blue-400 hover:bg-blue-600/10 px-2 py-1 text-xs rounded-md transition-all"
+              >
+                <Pencil size={14} />
+                Edit
+              </button>
+              <button
+                onClick={() => handleDelete(link.id)}
+                className="flex items-center gap-1 border border-red-500 text-red-400 hover:bg-red-600/10 px-2 py-1 text-xs rounded-md transition-all"
+              >
+                <Trash2 size={14} />
+                Delete
+              </button>
+            </div>
+
+        </motion.div>
       ))}
     </div>
   );

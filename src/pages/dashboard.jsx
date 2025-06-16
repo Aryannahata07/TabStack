@@ -103,7 +103,10 @@ export default function Dashboard() {
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-100">
       {/* Sidebar */}
       <div className="w-64 bg-gray-900 p-4 flex flex-col">
+        <div className="flex gap-2">
+        <img src="/favicon.png" alt="logo" className="h-8 w-8 object-contain" />
         <h1 className="text-3xl mb-6 font-bold font-['Pacifico']">TabStack</h1>
+        </div>
         <div className="flex items-center justify-between text-sm mb-2 text-gray-400">
           <span className="uppercase">Categories</span>
           <FaPlus className="cursor-pointer hover:text-white" onClick={() => setIsAddCategoryOpen(true)} />
@@ -159,8 +162,8 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gray-900 relative">
-          <div className="absolute left-1/2 transform -translate-x-1/2 w-1/3">
-            <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg">
+          <div className="flex-1 flex justify-center ">
+            <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg w-full max-w-md">
               <FaSearch className="text-gray-400" />
               <input
                 type="text"
@@ -174,11 +177,14 @@ export default function Dashboard() {
           <div className="flex items-center gap-4 ml-auto">
             <button
               onClick={() => {
-                setLinkToEdit(null);      // make sure it's not in edit mode
-                setIsLinkFormOpen(true);  // open modal
+                setLinkToEdit(null);
+                setIsLinkFormOpen(true);
               }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-md"
             >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
               Add Link
             </button>
 
