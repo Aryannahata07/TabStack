@@ -36,6 +36,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 
+
 export default function Dashboard() {
   const [selectedCategory, setSelectedCategory] = useState("All Links");
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -46,7 +47,7 @@ export default function Dashboard() {
   const [isLinkFormOpen, setIsLinkFormOpen] = useState(false);
   const [linkToEdit, setLinkToEdit] = useState(null);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
-
+  const [linkCount, setLinkCount] = useState(0);
 
 
   const navigate = useNavigate();
@@ -180,7 +181,11 @@ export default function Dashboard() {
                 setLinkToEdit(null);
                 setIsLinkFormOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-500 hover:to-indigo-500 transition-all duration-200 shadow-md"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-900 to-pink-800
+                text-white
+                shadow-lg               
+                transition-all duration-300
+                transform hover:scale-105"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -196,7 +201,11 @@ export default function Dashboard() {
                 {currentUser?.photoURL ? (
                   <img src={currentUser.photoURL} alt="User" className="h-8 w-8 rounded-full" />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-900 to-pink-800
+                    text-white
+                    shadow-lg
+                    transition-all duration-300
+                    transform hover:scale-105 flex items-center justify-center">
                     <span className="text-white font-medium">
                       {currentUser?.displayName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase()}
                     </span>
@@ -230,8 +239,28 @@ export default function Dashboard() {
         {/* Body */}
           
               <div className="p-6 h-full overflow-y-auto">
-                <h2 className="text-2xl font-semibold mb-6 capitalize text-left text-white">
-                  {selectedCategory}
+                <h2 className="relative inline-flex items-center gap-3 mb-6 text-2xl font-bold tracking-wide group">
+                  <span
+                    className="
+                      transition-all duration-500
+                      group-hover:scale-105
+                      group-hover:drop-shadow-[0_0_10px_rgba(168,85,247,0.7)]
+                    "
+                  >
+                    {selectedCategory}
+                  </span>
+                  <span
+                      className="
+                        text-sm font-medium
+                        px-3 py-1
+                        rounded-full
+                        bg-gray-800
+                        transition-all duration-300
+                        transform hover:scale-105
+                      "
+                    >
+                    {linkCount}
+                  </span>
                 </h2>
 
                 <LinkList
@@ -239,6 +268,7 @@ export default function Dashboard() {
                   searchQuery={searchQuery}
                   setLinkToEdit={setLinkToEdit}
                   setIsLinkFormOpen={setIsLinkFormOpen}
+                  onCountChange={setLinkCount} 
                 />
               </div>
            

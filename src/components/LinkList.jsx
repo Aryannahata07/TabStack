@@ -12,13 +12,12 @@ import { Bookmark } from "lucide-react";
 import { motion } from "framer-motion";
 import { Pencil, Trash2 } from "lucide-react";
 
-
-
 export default function LinkList({
   selectedCategoryId,
   searchQuery,
   setLinkToEdit,
-  setIsLinkFormOpen
+  setIsLinkFormOpen,
+  onCountChange,
 }) {
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +52,7 @@ export default function LinkList({
       }
 
       setLinks(fetched);
+      onCountChange?.(fetched.length);
       setLoading(false);
     }, (err) => {
       console.error("Real-time listener error:", err);
