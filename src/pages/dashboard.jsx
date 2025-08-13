@@ -48,7 +48,7 @@ export default function Dashboard() {
   const [linkToEdit, setLinkToEdit] = useState(null);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
   const [linkCount, setLinkCount] = useState(0);
-
+  const [sortOption, setSortOption] = useState("newest");
 
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -164,7 +164,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gray-900 relative">
           <div className="flex-1 flex justify-center ">
-            <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg w-full max-w-md">
+            <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg w-full max-w-md shadow-lg transition-all duration-300 hover:scale-105 hover:bg-gray-600 hover:drop-shadow-[0_0_10px_rgba(1,1,1,1)]">
               <FaSearch className="text-gray-400" />
               <input
                 type="text"
@@ -239,12 +239,12 @@ export default function Dashboard() {
         {/* Body */}
           
               <div className="p-6 h-full overflow-y-auto">
+                <div className="mb-4 flex items-center justify-between">
                 <h2 className="relative inline-flex items-center gap-3 mb-6 text-2xl font-bold tracking-wide group">
                   <span
                     className="
                       transition-all duration-500
                       group-hover:scale-105
-                      group-hover:drop-shadow-[0_0_10px_rgba(168,85,247,0.7)]
                     "
                   >
                     {selectedCategory}
@@ -255,13 +255,26 @@ export default function Dashboard() {
                         px-3 py-1
                         rounded-full
                         bg-gray-800
-                        transition-all duration-300
-                        transform hover:scale-105
                       "
                     >
                     {linkCount}
                   </span>
                 </h2>
+
+                <div className="mb-4 flex justify-end">
+                  <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                    className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-md border border-gray-700 hover:bg-gray-900  
+                 transition-all duration-300 ease-in-out cursor-pointer"
+                  >
+                    <option value="az">Title: A → Z</option>
+                    <option value="za">Title: Z → A</option>
+                    <option value="newest">Recently Added: New → Old</option>
+                    <option value="oldest">Recently Added: Old → New</option>
+                  </select>
+                </div>
+              </div>
 
                 <LinkList
                   selectedCategoryId={categories.find(c => c.name === selectedCategory)?.id}
@@ -269,6 +282,7 @@ export default function Dashboard() {
                   setLinkToEdit={setLinkToEdit}
                   setIsLinkFormOpen={setIsLinkFormOpen}
                   onCountChange={setLinkCount} 
+                  sortOption={sortOption}
                 />
               </div>
            

@@ -1,1 +1,12 @@
 @import "tailwindcss";
+
+* {
+	scroll-behavior: smooth;
+	scrollbar-width: thin;
+	scrollbar-color: rgba(125, 125, 164, 0.3) rgba(25, 22, 48, 0.356);
+}
+
+html,
+body {
+	scroll-behavior: smooth !important;
+}

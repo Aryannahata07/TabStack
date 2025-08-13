@@ -18,6 +18,7 @@ export default function LinkList({
   setLinkToEdit,
   setIsLinkFormOpen,
   onCountChange,
+  sortOption
 }) {
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +52,15 @@ export default function LinkList({
         );
       }
 
+      if (sortOption === "az") {
+        fetched.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortOption === "za") {
+        fetched.sort((a, b) => b.title.localeCompare(a.title));
+      } else if (sortOption === "oldest") {
+        fetched.sort((a, b) => a.createdAt - b.createdAt);
+      } else { // newest
+        fetched.sort((a, b) => b.createdAt - a.createdAt);
+      }
       setLinks(fetched);
       onCountChange?.(fetched.length);
       setLoading(false);
@@ -60,7 +70,7 @@ export default function LinkList({
     });
 
     return () => unsubscribe(); // Cleanup on unmount
-  }, [currentUser, selectedCategoryId, searchQuery]);
+  }, [currentUser, selectedCategoryId, searchQuery , sortOption]);
 
   if (loading) return <div className="text-white p-6">Loading...</div>;
 
