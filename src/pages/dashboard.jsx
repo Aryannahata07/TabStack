@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "../firebase/config";
 import CategoryForm from "../components/CategoryForm";
-import LinkForm from '../components/LinkForm'; 
+import LinkForm from '../components/LinkForm';
 import LinkList from "../components/LinkList";
 
 import {
@@ -10,8 +10,10 @@ import {
   FaSearch,
   FaRegFolderOpen,
   FaEllipsisV,
+  FaBars,
 } from "react-icons/fa";
 import { FiLogOut, FiUser, FiSettings } from "react-icons/fi";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
@@ -49,6 +51,8 @@ export default function Dashboard() {
   const [categoryToEdit, setCategoryToEdit] = useState(null);
   const [linkCount, setLinkCount] = useState(0);
   const [sortOption, setSortOption] = useState("newest");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
 
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -75,23 +79,23 @@ export default function Dashboard() {
   }, [currentUser]);
 
   const getIconForCategory = (iconName = "Folder", color = "text-gray-400") => {
-  const size = 18;
-  const iconMap = {
-    hash: <Hash className={`mr-2 ${color}`} size={size} />,
-    folder: <Folder className={`mr-2 ${color}`} size={size} />,
-    grid: <Grid className={`mr-2 ${color}`} size={size} />,
-    bookopen: <BookOpen className={`mr-2 ${color}`} size={size} />,
-    code: <Code className={`mr-2 ${color}`} size={size} />,
-    coffee: <Coffee className={`mr-2 ${color}`} size={size} />,
-    film: <Film className={`mr-2 ${color}`} size={size} />,
-    music: <Music className={`mr-2 ${color}`} size={size} />,
-    link2: <Link2 className={`mr-2 ${color}`} size={size} />,
-  };
+    const size = 18;
+    const iconMap = {
+      hash: <Hash className={`mr-2 ${color}`} size={size} />,
+      folder: <Folder className={`mr-2 ${color}`} size={size} />,
+      grid: <Grid className={`mr-2 ${color}`} size={size} />,
+      bookopen: <BookOpen className={`mr-2 ${color}`} size={size} />,
+      code: <Code className={`mr-2 ${color}`} size={size} />,
+      coffee: <Coffee className={`mr-2 ${color}`} size={size} />,
+      film: <Film className={`mr-2 ${color}`} size={size} />,
+      music: <Music className={`mr-2 ${color}`} size={size} />,
+      link2: <Link2 className={`mr-2 ${color}`} size={size} />,
+    };
 
-  return iconMap[iconName?.toLowerCase()] || (
-    <Folder className={`mr-2 ${color}`} size={size} />
-  );
-};
+    return iconMap[iconName?.toLowerCase()] || (
+      <Folder className={`mr-2 ${color}`} size={size} />
+    );
+  };
 
 
   const handleDeleteCategory = async (id) => {
@@ -102,26 +106,41 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-100">
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="w-64 bg-gray-900 p-4 flex flex-col">
-        <div className="flex gap-2">
-        <img src="/favicon.png" alt="logo" className="h-8 w-8 object-contain" />
-        <h1 className="text-3xl mb-6 font-bold font-['Pacifico']">TabStack</h1>
+      <div className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 p-4 flex flex-col 
+        transform transition-transform duration-300 ease-in-out
+        lg:translate-x-0 lg:static lg:inset-auto
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="flex gap-2 items-center">
+          <img src="/favicon.png" alt="logo" className="h-8 w-8 object-contain" />
+          <h1 className="text-3xl font-bold font-['Pacifico']">TabStack</h1>
         </div>
-        <div className="flex items-center justify-between text-sm mb-2 text-gray-400">
+        <div className="flex items-center justify-between text-sm mb-2 mt-6 text-gray-400">
           <span className="uppercase">Categories</span>
           <FaPlus className="cursor-pointer hover:text-white" onClick={() => setIsAddCategoryOpen(true)} />
         </div>
-        <ul className="space-y-2 overflow-y-auto">
+        <ul className="space-y-2 overflow-y-auto flex-1">
           {categories.map((category) => (
             <li key={category.id} className="relative group">
               <button
-                onClick={() => setSelectedCategory(category.name)}
-                className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategory === category.name
-                    ? "bg-gray-700 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                }`}
+                onClick={() => {
+                  setSelectedCategory(category.name);
+                  setIsSidebarOpen(false); // Close sidebar on selection on mobile
+                }}
+                className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCategory === category.name
+                  ? "bg-gray-700 text-white"
+                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                  }`}
               >
                 {getIconForCategory(category.icon, category.color)}
                 <span className="ml-1 truncate flex-1 text-left">{category.name}</span>
@@ -134,15 +153,15 @@ export default function Dashboard() {
                   {openMenuId === category.id && (
                     <div className="absolute right-0 mt-2 w-32 rounded bg-gray-800 shadow-lg z-10">
                       <button
-                          onClick={() => {
-                            setCategoryToEdit(category);
-                            setIsAddCategoryOpen(true);
-                            setOpenMenuId(null);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-gray-700"
-                        >
-                          Edit
-                        </button>
+                        onClick={() => {
+                          setCategoryToEdit(category);
+                          setIsAddCategoryOpen(true);
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-700"
+                      >
+                        Edit
+                      </button>
 
                       <button
                         onClick={() => handleDeleteCategory(category.id)}
@@ -160,29 +179,35 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700 bg-gray-900 relative">
-          <div className="flex-1 flex justify-center ">
-            <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg w-full max-w-md shadow-lg transition-all duration-300 hover:scale-105 hover:bg-gray-600 hover:drop-shadow-[0_0_10px_rgba(1,1,1,1)]">
-              <FaSearch className="text-gray-400" />
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-700 bg-gray-900 relative gap-4">
+          <div className="flex items-center flex-1 max-w-2xl">
+            <button
+              className="lg:hidden mr-4 text-gray-400 hover:text-white"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <FaBars size={24} />
+            </button>
+            <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg w-full shadow-lg transition-all duration-300 hover:scale-[1.02] hover:bg-gray-600 hover:drop-shadow-[0_0_10px_rgba(1,1,1,1)]">
+              <FaSearch className="text-gray-400 flex-shrink-0" />
               <input
                 type="text"
-                placeholder="Search links..."
+                placeholder="Search..."
                 className="bg-transparent outline-none w-full text-white text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
-          <div className="flex items-center gap-4 ml-auto">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <button
               onClick={() => {
                 setLinkToEdit(null);
                 setIsLinkFormOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-900 to-pink-800
-                text-white
+              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-blue-900 to-pink-800
+                text-white text-sm
                 shadow-lg               
                 transition-all duration-300
                 transform hover:scale-105"
@@ -190,7 +215,8 @@ export default function Dashboard() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add Link
+              <span className="hidden sm:inline">Add Link</span>
+              <span className="sm:hidden">Add</span>
             </button>
 
             <div className="relative">
@@ -237,55 +263,55 @@ export default function Dashboard() {
         </div>
 
         {/* Body */}
-          
-              <div className="p-6 h-full overflow-y-auto">
-                <div className="mb-4 flex items-center justify-between">
-                <h2 className="relative inline-flex items-center gap-3 mb-6 text-2xl font-bold tracking-wide group">
-                  <span
-                    className="
+
+        <div className="p-4 sm:p-6 h-full overflow-y-auto">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 className="relative inline-flex items-center gap-3 text-2xl font-bold tracking-wide group">
+              <span
+                className="
                       transition-all duration-500
                       group-hover:scale-105
                     "
-                  >
-                    {selectedCategory}
-                  </span>
-                  <span
-                      className="
+              >
+                {selectedCategory}
+              </span>
+              <span
+                className="
                         text-sm font-medium
                         px-3 py-1
                         rounded-full
                         bg-gray-800
                       "
-                    >
-                    {linkCount}
-                  </span>
-                </h2>
+              >
+                {linkCount}
+              </span>
+            </h2>
 
-                <div className="mb-4 flex justify-end">
-                  <select
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                    className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-md border border-gray-700 hover:bg-gray-900  
-                 transition-all duration-300 ease-in-out cursor-pointer"
-                  >
-                    <option value="az">Title: A → Z</option>
-                    <option value="za">Title: Z → A</option>
-                    <option value="newest">Recently Added: New → Old</option>
-                    <option value="oldest">Recently Added: Old → New</option>
-                  </select>
-                </div>
-              </div>
+            <div className="flex justify-start sm:justify-end">
+              <select
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-md border border-gray-700 hover:bg-gray-900  
+                 transition-all duration-300 ease-in-out cursor-pointer w-full sm:w-auto"
+              >
+                <option value="az">Title: A → Z</option>
+                <option value="za">Title: Z → A</option>
+                <option value="newest">Recently Added: New → Old</option>
+                <option value="oldest">Recently Added: Old → New</option>
+              </select>
+            </div>
+          </div>
 
-                <LinkList
-                  selectedCategoryId={categories.find(c => c.name === selectedCategory)?.id}
-                  searchQuery={searchQuery}
-                  setLinkToEdit={setLinkToEdit}
-                  setIsLinkFormOpen={setIsLinkFormOpen}
-                  onCountChange={setLinkCount} 
-                  sortOption={sortOption}
-                />
-              </div>
-           
+          <LinkList
+            selectedCategoryId={categories.find(c => c.name === selectedCategory)?.id}
+            searchQuery={searchQuery}
+            setLinkToEdit={setLinkToEdit}
+            setIsLinkFormOpen={setIsLinkFormOpen}
+            onCountChange={setLinkCount}
+            sortOption={sortOption}
+          />
+        </div>
+
 
       </div>
 
@@ -318,7 +344,7 @@ export default function Dashboard() {
         onSuccess={() => {
           setIsLinkFormOpen(false);
           setLinkToEdit(null);
-          
+
         }}
         categories={categories}
         initialCategoryId={selectedCategory}  // if you're tracking selected category

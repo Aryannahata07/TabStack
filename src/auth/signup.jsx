@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-   const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -19,26 +19,26 @@ export default function SignUp() {
       return;
     }
     setError("");
-    signup(e); 
+    signup(e);
   };
 
   const signup = async () => {
-  try {
-    await createUserWithEmailAndPassword(auth, email, password);
-    toast.success("Account created successfully!");
-    navigate("/");
-  } catch (error) {
-    if (error.code === "auth/email-already-in-use") {
-      toast.error("Email is already in use. Please log in.");
-    } else {
-      toast.error(error.message);
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      toast.success("Account created successfully!");
+      navigate("/");
+    } catch (error) {
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("Email is already in use. Please log in.");
+      } else {
+        toast.error(error.message);
+      }
     }
-  }
   };
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-900 text-white">
-      <form className="flex flex-col bg-gray-800 p-8 rounded-xl space-y-4 w-96 shadow-lg" onSubmit={handleSubmit}>
+      <form className="flex flex-col bg-gray-800 p-8 rounded-xl space-y-4 w-full max-w-sm m-4 shadow-lg" onSubmit={handleSubmit}>
         <h2 className="text-3xl font-semibold text-center">Sign Up</h2>
         {error && (
           <div className="text-red-400 text-sm text-center">{error}</div>
