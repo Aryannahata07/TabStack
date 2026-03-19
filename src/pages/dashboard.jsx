@@ -53,6 +53,21 @@ export default function Dashboard() {
   const [sortOption, setSortOption] = useState("newest");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Global click outside listener for dropdown menus
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      // Close category menu if clicked outside
+      if (!e.target.closest('.category-menu-container')) {
+        setOpenMenuId(null);
+      }
+      // Close profile menu if clicked outside
+      if (!e.target.closest('.user-menu-container')) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -146,12 +161,12 @@ export default function Dashboard() {
                 <span className="ml-1 truncate flex-1 text-left">{category.name}</span>
               </button>
               {category.id !== "all" && (
-                <div className="absolute right-2 top-2">
-                  <button onClick={() => setOpenMenuId(openMenuId === category.id ? null : category.id)}>
+                <div className="absolute right-2 top-2 category-menu-container">
+                  <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === category.id ? null : category.id); }}>
                     <FaEllipsisV className="text-gray-400 hover:text-white" size={12} />
                   </button>
                   {openMenuId === category.id && (
-                    <div className="absolute right-0 mt-2 w-32 rounded bg-gray-800 shadow-lg z-10">
+                    <div className="absolute right-0 mt-2 w-25 rounded bg-gray-800 shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-gray-600 z-50 overflow-hidden">
                       <button
                         onClick={() => {
                           setCategoryToEdit(category);
@@ -206,11 +221,11 @@ export default function Dashboard() {
                 setLinkToEdit(null);
                 setIsLinkFormOpen(true);
               }}
-              className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-blue-900 to-pink-800
-                text-white text-sm
-                shadow-lg               
-                transition-all duration-300
-                transform hover:scale-105"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 
+                bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
+                text-white text-sm font-medium rounded-lg 
+                shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 
+                border border-white/10 active:scale-95"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -219,35 +234,39 @@ export default function Dashboard() {
               <span className="sm:hidden">Add</span>
             </button>
 
-            <div className="relative">
+            <div className="relative user-menu-container">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="p-2 rounded-full bg-gray-800 hover:bg-gray-700"
+                className={`group p-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-400
+                  transition-all duration-300 transform active:scale-95 relative z-50
+                  ${isUserMenuOpen ? 'shadow-[0_0_25px_rgba(168,85,247,0.8)]' : 'shadow-md hover:shadow-[0_0_25px_rgba(168,85,247,0.8)] hover:-translate-y-0.4'}`}
               >
                 {currentUser?.photoURL ? (
-                  <img src={currentUser.photoURL} alt="User" className="h-8 w-8 rounded-full" />
+                  <img src={currentUser.photoURL} alt="User" className="h-9 w-9 rounded-full border-2 border-gray-900" />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-blue-900 to-pink-800
-                    text-white
-                    shadow-lg
-                    transition-all duration-300
-                    transform hover:scale-105 flex items-center justify-center">
-                    <span className="text-white font-medium">
+                  <div className="h-9 w-9 rounded-full bg-gray-900 border-2 border-gray-900 flex items-center justify-center">
+                    <span className="text-white font-medium text-sm">
                       {currentUser?.displayName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase()}
                     </span>
                   </div>
                 )}
               </button>
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-gray-800 ring-1 ring-black ring-opacity-5 z-10">
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-gray-700 py-1 bg-gray-800 z-50">
                   <div className="px-4 py-2 border-b border-gray-700">
                     <p className="text-sm font-medium text-white truncate">{currentUser?.displayName || "User"}</p>
                     <p className="text-xs text-gray-400 truncate">{currentUser?.email}</p>
                   </div>
-                  <button className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                  <button
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                  >
                     <FiUser className="mr-2 h-4 w-4" /> Profile
                   </button>
-                  <button className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700">
+                  <button
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                  >
                     <FiSettings className="mr-2 h-4 w-4" /> Settings
                   </button>
                   <button
