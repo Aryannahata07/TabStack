@@ -12,6 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { Bookmark, Pencil, Trash2, Link2, Copy, Check, Pin } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
+import { decryptData } from "../utils/encryption";
 
 export default function LinkList({
   selectedCategoryId,
@@ -55,7 +56,17 @@ export default function LinkList({
     const ref = collection(db, "users", currentUser.uid, "links");
 
     const unsubscribe = onSnapshot(ref, (snapshot) => {
-      let fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      let fetched = snapshot.docs.map(doc => {
+        const data = doc.data();
+        const uid = currentUser.uid;
+        return {
+          id: doc.id,
+          ...data,
+          title: decryptData(data.title, uid),
+          url: decryptData(data.url, uid),
+          description: decryptData(data.description, uid)
+        };
+      });
 
       if (selectedCategoryId && selectedCategoryId !== "all") {
         fetched = fetched.filter(link => link.categoryId === selectedCategoryId);

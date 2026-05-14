@@ -93,6 +93,16 @@ export const AuthProvider = ({ children }) => {
         if (typeof window !== "undefined") {
             window.postMessage({ type: "TABSTACK_AUTH_SYNC", user: userData }, "*");
         }
+
+        // Check if the extension syncing says we should actually be logged out
+        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+            chrome.storage.local.get(['extensionSyncUser'], async (result) => {
+                // if it's explicitly null, the web app told the extension to log out
+                if (result.extensionSyncUser === null) {
+                    importFirebaseAuth(null).then(() => signOut(auth));
+                }
+            });
+        }
       } else {
         setUser(null);
         
@@ -146,13 +156,23 @@ export const AuthProvider = ({ children }) => {
         window.addEventListener("message", handleMessage);
     }
 
-    // In extension popup, auto-logout when web app logs out
+    // In extension popup, auto-logout or auto-login when web app state changes
     if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.onChanged) {
         storageListener = (changes, area) => {
              if (area === "local" && changes.extensionSyncUser) {
                  if (changes.extensionSyncUser.newValue === null) {
                      // The web app reported a log out! We must clear our extension DB and real-logout!
                      importFirebaseAuth(null).then(() => signOut(auth));
+                 } else if (changes.extensionSyncUser.newValue && changes.extensionSyncUser.newValue.firebaseAuthPayload) {
+                     // The web app reported a log in! Inject it and reload so extension catches it
+                     const syncedUser = changes.extensionSyncUser.newValue;
+                     const lastInjected = sessionStorage.getItem('tabstack_injection_attempt');
+                     if (lastInjected !== syncedUser.uid) {
+                         sessionStorage.setItem('tabstack_injection_attempt', syncedUser.uid);
+                         importFirebaseAuth(syncedUser.firebaseAuthPayload).then(() => {
+                             if (typeof window !== "undefined") window.location.reload();
+                         });
+                     }
                  }
              }
         };

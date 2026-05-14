@@ -6,6 +6,8 @@ import { X, Globe, Edit3, Layout, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { encryptData } from '../utils/encryption';
+
 const getFavicon = (url) => {
   try {
     const domain = new URL(url).hostname;
@@ -34,6 +36,7 @@ const LinkForm = ({
 
   useEffect(() => {
     if (linkToEdit) {
+      // Data is already decrypted in the LinkList before passing to this form
       setUrl(linkToEdit.url);
       setTitle(linkToEdit.title);
       setDescription(linkToEdit.description || '');
@@ -73,36 +76,32 @@ const LinkForm = ({
       setLoading(true);
       setError('');
 
-      let formattedUrl = url;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        formattedUrl = `https://${url}`;
+      let formattedUrl = url.trim();
+      if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+        formattedUrl = `https://${formattedUrl}`;
       }
 
       const favicon = getFavicon(formattedUrl);
       const timestamp = Date.now();
 
+      const linkData = {
+        url: encryptData(formattedUrl, currentUser.uid),
+        title: encryptData(title.trim(), currentUser.uid),
+        description: encryptData(description.trim(), currentUser.uid),
+        categoryId,
+        isPinned,
+        favicon,
+        updatedAt: timestamp
+      };
+
       if (linkToEdit) {
         const linkRef = doc(db, "users", currentUser.uid, "links", linkToEdit.id);
-        await updateDoc(linkRef, {
-          url: formattedUrl,
-          title: title.trim(),
-          description: description.trim(),
-          categoryId,
-          isPinned,
-          favicon,
-          updatedAt: timestamp
-        });
-        toast.success('Link updated successfully');
+        await updateDoc(linkRef, linkData);
+        toast.success('Link updated successfully (encrypted)');
       } else {
         await addDoc(collection(db, "users", currentUser.uid, "links"), {
-          url: formattedUrl,
-          title: title.trim(),
-          description: description.trim(),
-          categoryId: categoryId.trim(),
-          isPinned,
-          favicon,
-          createdAt: timestamp,
-          updatedAt: timestamp
+          ...linkData,
+          createdAt: timestamp
         });
         toast.success('Link added successfully');
       }

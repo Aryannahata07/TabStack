@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase/config';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { X, Edit3, Tag, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+
+import { encryptData, decryptData } from '../utils/encryption';
 
 const iconOptions = [
   { value: 'folder', label: 'Folder' },
@@ -28,13 +30,28 @@ const colorOptions = [
   { value: 'text-gray-400', label: 'Gray', bg: 'bg-gray-400' },
 ];
 
-const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories }) => {
+const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories, categoryToEdit }) => {
   const { currentUser } = useAuth();
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('folder');
   const [color, setColor] = useState('text-blue-400');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (categoryToEdit && isOpen) {
+      // Data is already decrypted in the dashboard before passing to this form
+      setName(categoryToEdit.name || '');
+      setIcon(categoryToEdit.icon || 'folder');
+      setColor(categoryToEdit.color || 'text-blue-400');
+      setError('');
+    } else if (!categoryToEdit && isOpen) {
+      setName('');
+      setIcon('folder');
+      setColor('text-blue-400');
+      setError('');
+    }
+  }, [categoryToEdit, isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +67,8 @@ const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories }) => {
     }
 
     const nameExists = existingCategories.some(
-      (cat) => cat.name.toLowerCase() === name.trim().toLowerCase()
+      (cat) => cat.name.toLowerCase() === name.trim().toLowerCase() &&
+        (!categoryToEdit || cat.id !== categoryToEdit.id)
     );
 
     if (nameExists) {
@@ -62,26 +80,29 @@ const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories }) => {
       setLoading(true);
       setError('');
 
-      const newCategory = {
-        name: name.trim(),
+      const categoryData = {
+        name: encryptData(name.trim(), currentUser.uid),
         icon,
         color,
-        order: existingCategories.length,
       };
 
-      // Create category in Firestore
-      const docRef = await addDoc(
-        collection(db, 'users', currentUser.uid, 'categories'),
-        newCategory
-      );
-
-      // Update local state and close form
-      onSuccess({ id: docRef.id, ...newCategory });
-
-      toast.success('Category created successfully!');
+      if (categoryToEdit) {
+        await updateDoc(doc(db, 'users', currentUser.uid, 'categories', categoryToEdit.id), categoryData);
+        // Important: success callback expects decrypted data to update UI immediately
+        onSuccess({ id: categoryToEdit.id, ...categoryToEdit, name: name.trim(), icon, color });
+        toast.success('Category updated successfully!');
+      } else {
+        categoryData.order = existingCategories.length;
+        const docRef = await addDoc(
+          collection(db, 'users', currentUser.uid, 'categories'),
+          categoryData
+        );
+        onSuccess({ id: docRef.id, ...categoryData, name: name.trim() });
+        toast.success('Category created successfully!');
+      }
     } catch (err) {
-      setError(err.message || 'Failed to create category');
-      toast.error('Failed to create category');
+      setError(err.message || 'Failed to save category');
+      toast.error('Failed to save category');
     } finally {
       // Ensure loading state is reset after completion
       setLoading(false);
@@ -112,7 +133,9 @@ const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories }) => {
               className="relative w-full max-w-md overflow-hidden rounded-2xl bg-gray-900 p-6 shadow-[0_0_40px_-15px_rgba(0,0,0,0.5)] border border-gray-800"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">Add New Category</h2>
+                <h2 className="text-xl font-bold text-white">
+                  {categoryToEdit ? 'Edit Category' : 'Add New Category'}
+                </h2>
                 <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
                   <X className="h-6 w-6" />
                 </button>
@@ -209,7 +232,7 @@ const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories }) => {
                   transform hover:-translate-y-0.5 border border-white/10 active:scale-95 
                   disabled:opacity-50 disabled:pointer-events-none"
                   >
-                    {loading ? 'Creating...' : 'Create Category'}
+                    {loading ? 'Saving...' : (categoryToEdit ? 'Save Changes' : 'Create Category')}
                   </button>
                 </div>
               </form>

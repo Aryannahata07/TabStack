@@ -12,7 +12,7 @@ import {
   FaEllipsisV,
   FaBars,
 } from "react-icons/fa";
-import { FiLogOut, FiUser, FiSettings } from "react-icons/fi";
+import { FiLogOut } from "react-icons/fi";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
@@ -37,6 +37,8 @@ import {
   doc,
   deleteDoc,
 } from "firebase/firestore";
+
+import { decryptData } from "../utils/encryption";
 
 
 export default function Dashboard() {
@@ -83,7 +85,14 @@ export default function Dashboard() {
 
       const q = query(collection(db, "users", currentUser.uid, "categories"));
       const snapshot = await getDocs(q);
-      const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const fetched = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          name: decryptData(data.name, currentUser.uid)
+        };
+      });
       setCategories([
         { name: "All Links", icon: "Grid", color: "text-white", id: "all" },
         ...fetched,
@@ -257,18 +266,7 @@ export default function Dashboard() {
                     <p className="text-sm font-medium text-white truncate">{currentUser?.displayName || "User"}</p>
                     <p className="text-xs text-gray-400 truncate">{currentUser?.email}</p>
                   </div>
-                  <button
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-                  >
-                    <FiUser className="mr-2 h-4 w-4" /> Profile
-                  </button>
-                  <button
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-                  >
-                    <FiSettings className="mr-2 h-4 w-4" /> Settings
-                  </button>
+
                   <button
                     onClick={handleLogout}
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"

@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 import { db } from './firebase/config';
 import { collection, query, getDocs, addDoc } from 'firebase/firestore';
 import { Globe, Edit3, Layout, CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { encryptData, decryptData } from './utils/encryption';
 
 const getFavicon = (url) => {
     try {
@@ -48,7 +49,14 @@ export default function PopupApp() {
                 try {
                     const q = query(collection(db, "users", currentUser.uid, "categories"));
                     const snapshot = await getDocs(q);
-                    const fetched = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const fetched = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            ...data,
+                            name: decryptData(data.name, currentUser.uid)
+                        };
+                    });
                     setCategories(fetched);
                     if (fetched.length > 0) {
                         setCategoryId(fetched[0].id);
@@ -82,18 +90,19 @@ export default function PopupApp() {
         setError('');
 
         try {
-            let formattedUrl = url;
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                formattedUrl = `https://${url}`;
+            let formattedUrl = url.trim();
+            if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+                formattedUrl = `https://${formattedUrl}`;
             }
 
             const favicon = getFavicon(formattedUrl);
             const timestamp = Date.now();
+            const uid = currentUser.uid;
 
-            await addDoc(collection(db, "users", currentUser.uid, "links"), {
-                url: formattedUrl,
-                title: title.trim(),
-                description: description.trim(),
+            await addDoc(collection(db, "users", uid, "links"), {
+                url: encryptData(formattedUrl, uid),
+                title: encryptData(title.trim(), uid),
+                description: encryptData(description.trim(), uid),
                 categoryId: categoryId,
                 favicon,
                 createdAt: timestamp,

@@ -26,6 +26,8 @@
     "content_scripts": [
         {
             "matches": [
+                "https://tabstack-9eea3.web.app/*",
+                "https://tabstack-9eea3.firebaseapp.com/*",
                 "https://aryannahata07.github.io/*",
                 "http://localhost:5173/*",
                 "http://127.0.0.1:5173/*"
