@@ -4,6 +4,7 @@ import { db, auth } from "../firebase/config";
 import CategoryForm from "../components/CategoryForm";
 import LinkForm from '../components/LinkForm';
 import LinkList from "../components/LinkList";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   FaPlus,
@@ -53,6 +54,7 @@ export default function Dashboard() {
   const [categoryToEdit, setCategoryToEdit] = useState(null);
   const [linkCount, setLinkCount] = useState(0);
   const [sortOption, setSortOption] = useState("newest");
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Global click outside listener for dropdown menus
@@ -65,6 +67,10 @@ export default function Dashboard() {
       // Close profile menu if clicked outside
       if (!e.target.closest('.user-menu-container')) {
         setIsUserMenuOpen(false);
+      }
+      // Close sort menu if clicked outside
+      if (!e.target.closest('.sort-menu-container')) {
+        setIsSortMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -129,7 +135,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 text-gray-100">
+    <div className="flex h-screen bg-[#040b16] text-slate-300 font-sans selection:bg-indigo-500/30 relative overflow-hidden">
+      {/* Global Background Glow */}
+      <div className="absolute top-[-20%] left-[-10%] w-[120%] h-[60%] bg-indigo-500/10 blur-[120px] pointer-events-none z-0 rounded-full"></div>
+      
       {/* Mobile Overlay */}
       {isSidebarOpen && (
         <div
@@ -140,18 +149,21 @@ export default function Dashboard() {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 p-4 flex flex-col 
-        transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 w-64 bg-[#0a1226]/40 backdrop-blur-xl border-r border-indigo-500/10 p-4 flex flex-col 
+        transform transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
+        shadow-[4px_0_24px_-4px_rgba(0,0,0,0.5)] lg:shadow-none
         lg:translate-x-0 lg:static lg:inset-auto
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center px-2">
           <img src="/favicon.png" alt="logo" className="h-8 w-8 object-contain" />
           <h1 className="text-3xl font-bold font-['Pacifico']">TabStack</h1>
         </div>
-        <div className="flex items-center justify-between text-sm mb-2 mt-6 text-gray-400">
+        <div className="flex items-center justify-between text-xs font-semibold tracking-wider mb-2 mt-8 text-zinc-500 px-2">
           <span className="uppercase">Categories</span>
-          <FaPlus className="cursor-pointer hover:text-white" onClick={() => setIsAddCategoryOpen(true)} />
+          <button onClick={() => setIsAddCategoryOpen(true)} className="p-1 rounded-md hover:bg-white/10 transition-colors">
+             <FaPlus className="cursor-pointer text-zinc-400 hover:text-zinc-200 transition-colors" />
+          </button>
         </div>
         <ul className="space-y-2 overflow-y-auto flex-1">
           {categories.map((category) => (
@@ -161,35 +173,35 @@ export default function Dashboard() {
                   setSelectedCategory(category.name);
                   setIsSidebarOpen(false); // Close sidebar on selection on mobile
                 }}
-                className={`w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCategory === category.name
-                  ? "bg-gray-700 text-white"
-                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                className={`w-full flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${selectedCategory === category.name
+                  ? "bg-white/10 text-zinc-100 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+                  : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
                   }`}
               >
                 {getIconForCategory(category.icon, category.color)}
                 <span className="ml-1 truncate flex-1 text-left">{category.name}</span>
               </button>
               {category.id !== "all" && (
-                <div className="absolute right-2 top-2 category-menu-container">
-                  <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === category.id ? null : category.id); }}>
-                    <FaEllipsisV className="text-gray-400 hover:text-white" size={12} />
+                <div className="absolute right-2 top-2.5 category-menu-container opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button className="p-1 rounded-md hover:bg-white/10 transition-colors" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === category.id ? null : category.id); }}>
+                    <FaEllipsisV className="text-slate-400 hover:text-slate-200" size={12} />
                   </button>
                   {openMenuId === category.id && (
-                    <div className="absolute right-0 mt-2 w-25 rounded bg-gray-800 shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-gray-600 z-50 overflow-hidden">
+                    <div className="absolute right-0 mt-1 w-32 rounded-lg bg-[#0a1226] shadow-2xl border border-indigo-500/10 z-50 overflow-hidden py-1">
                       <button
                         onClick={() => {
                           setCategoryToEdit(category);
                           setIsAddCategoryOpen(true);
                           setOpenMenuId(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-700"
+                        className="w-full px-4 py-2 text-left text-sm text-zinc-300 hover:bg-white/10 transition-colors"
                       >
                         Edit
                       </button>
 
                       <button
                         onClick={() => handleDeleteCategory(category.id)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700"
+                        className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                       >
                         Delete
                       </button>
@@ -203,22 +215,22 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-700 bg-gray-900 relative gap-4">
+        <div className="flex items-center justify-between px-4 sm:px-8 py-5 border-b border-indigo-500/10 bg-[#0a1226]/40 backdrop-blur-xl shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)] sticky top-0 z-30 gap-4">
           <div className="flex items-center flex-1 max-w-2xl">
             <button
-              className="lg:hidden mr-4 text-gray-400 hover:text-white"
+              className="lg:hidden mr-4 text-zinc-400 hover:text-zinc-200 transition-colors p-2 rounded-lg hover:bg-white/5"
               onClick={() => setIsSidebarOpen(true)}
             >
               <FaBars size={24} />
             </button>
-            <div className="flex items-center gap-2 bg-gray-700 px-3 py-1.5 rounded-lg w-full shadow-lg transition-all duration-300 hover:scale-[1.02] hover:bg-gray-600 hover:drop-shadow-[0_0_10px_rgba(1,1,1,1)]">
-              <FaSearch className="text-gray-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-[#0a1226]/50 border border-indigo-500/10 px-4 py-2 rounded-xl w-full shadow-inner transition-all duration-300 focus-within:border-indigo-500/50 focus-within:ring-2 focus-within:ring-indigo-500/20">
+              <FaSearch className="text-slate-400 flex-shrink-0" />
               <input
                 type="text"
-                placeholder="Search..."
-                className="bg-transparent outline-none w-full text-white text-sm"
+                placeholder="Search links..."
+                className="bg-transparent outline-none w-full text-slate-200 text-sm placeholder:text-slate-500"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -231,10 +243,9 @@ export default function Dashboard() {
                 setIsLinkFormOpen(true);
               }}
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 
-                bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
-                text-white text-sm font-medium rounded-lg 
-                shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 
-                border border-white/10 active:scale-95"
+                bg-indigo-500/10 hover:bg-indigo-500/20
+                text-indigo-300 text-sm font-medium rounded-xl 
+                transition-all duration-300 border border-indigo-500/20 active:scale-[0.98]"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -246,30 +257,30 @@ export default function Dashboard() {
             <div className="relative user-menu-container">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className={`group p-0.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-400 hover:to-purple-400
-                  transition-all duration-300 transform active:scale-95 relative z-50
-                  ${isUserMenuOpen ? 'shadow-[0_0_25px_rgba(168,85,247,0.8)]' : 'shadow-md hover:shadow-[0_0_25px_rgba(168,85,247,0.8)] hover:-translate-y-0.4'}`}
+                className={`group p-0.5 rounded-full bg-[#0a1226] border border-white/10 hover:border-white/20
+                  transition-all duration-300 active:scale-[0.98] relative z-50
+                  ${isUserMenuOpen ? 'ring-2 ring-indigo-500/50' : 'hover:shadow-[0_0_15px_rgba(255,255,255,0.05)]'}`}
               >
                 {currentUser?.photoURL ? (
                   <img src={currentUser.photoURL} alt="User" className="h-9 w-9 rounded-full border-2 border-gray-900" />
                 ) : (
-                  <div className="h-9 w-9 rounded-full bg-gray-900 border-2 border-gray-900 flex items-center justify-center">
-                    <span className="text-white font-medium text-sm">
+                  <div className="h-9 w-9 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                    <span className="font-semibold text-sm">
                       {currentUser?.displayName?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase()}
                     </span>
                   </div>
                 )}
               </button>
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-[0_4px_20px_rgba(0,0,0,0.5)] border border-gray-700 py-1 bg-gray-800 z-50">
-                  <div className="px-4 py-2 border-b border-gray-700">
-                    <p className="text-sm font-medium text-white truncate">{currentUser?.displayName || "User"}</p>
-                    <p className="text-xs text-gray-400 truncate">{currentUser?.email}</p>
+                <div className="absolute right-0 mt-3 w-56 rounded-xl shadow-2xl border border-indigo-500/10 py-1 bg-[#0a1226] backdrop-blur-xl z-50">
+                  <div className="px-4 py-3 border-b border-indigo-500/10">
+                    <p className="text-sm font-semibold text-slate-200 truncate">{currentUser?.displayName || "User"}</p>
+                    <p className="text-xs text-slate-400 truncate mt-0.5">{currentUser?.email}</p>
                   </div>
 
                   <button
                     onClick={handleLogout}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                    className="flex items-center w-full px-4 py-2.5 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors mt-1"
                   >
                     <FiLogOut className="mr-2 h-4 w-4" /> Sign out
                   </button>
@@ -281,41 +292,65 @@ export default function Dashboard() {
 
         {/* Body */}
 
-        <div className="p-4 sm:p-6 h-full overflow-y-auto">
-          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <h2 className="relative inline-flex items-center gap-3 text-2xl font-bold tracking-wide group">
-              <span
-                className="
-                      transition-all duration-500
-                      group-hover:scale-105
-                    "
-              >
-                {selectedCategory}
-              </span>
-              <span
-                className="
-                        text-sm font-medium
-                        px-3 py-1
-                        rounded-full
-                        bg-gray-800
-                      "
-              >
-                {linkCount}
-              </span>
-            </h2>
+        <div className="p-4 sm:p-8 h-full overflow-y-auto relative z-10 scroll-smooth">
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h2 className="relative inline-flex items-center gap-3 text-3xl font-bold tracking-tight text-slate-100 group">
+                <span className="transition-all duration-300 group-hover:text-indigo-400">
+                  {selectedCategory}
+                </span>
+                <span className="text-sm font-medium px-2.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/10">
+                  {linkCount}
+                </span>
+              </h2>
+            </div>
 
-            <div className="flex justify-start sm:justify-end">
-              <select
-                value={sortOption}
-                onChange={(e) => setSortOption(e.target.value)}
-                className="bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-md border border-gray-700 hover:bg-gray-900  
-                 transition-all duration-300 ease-in-out cursor-pointer w-full sm:w-auto"
+            <div className="flex justify-start sm:justify-end relative sort-menu-container">
+              <button
+                onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                className="flex items-center justify-between gap-2 bg-[#0a1226]/40 backdrop-blur-xl text-slate-200 px-4 py-2.5 rounded-xl text-sm shadow-[0_4px_15px_-3px_rgba(0,0,0,0.2)] border border-indigo-500/20 hover:border-indigo-500/40 hover:bg-[#0a1226]/60 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all duration-300 w-full sm:w-[220px]"
               >
-                <option value="az">Title: A → Z</option>
-                <option value="za">Title: Z → A</option>
-                <option value="newest">Recently Added: New → Old</option>
-                <option value="oldest">Recently Added: Old → New</option>
-              </select>
+                <span className="truncate">
+                  {sortOption === "az" ? "Title: A → Z" :
+                   sortOption === "za" ? "Title: Z → A" :
+                   sortOption === "newest" ? "Recently Added: New → Old" :
+                   "Recently Added: Old → New"}
+                </span>
+                <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isSortMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <AnimatePresence>
+                {isSortMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute top-full right-0 mt-2 w-full sm:w-[220px] rounded-xl bg-[#040b16]/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-indigo-500/20 py-1.5 z-50 overflow-hidden"
+                  >
+                    {[
+                      { value: "newest", label: "Recently Added: New → Old" },
+                      { value: "oldest", label: "Recently Added: Old → New" },
+                      { value: "az", label: "Title: A → Z" },
+                      { value: "za", label: "Title: Z → A" }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setSortOption(option.value);
+                          setIsSortMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between ${sortOption === option.value ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-300 hover:bg-white/5'}`}
+                      >
+                        {option.label}
+                        {sortOption === option.value && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 

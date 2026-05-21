@@ -4,6 +4,7 @@ import { db } from './firebase/config';
 import { collection, query, getDocs, addDoc } from 'firebase/firestore';
 import { Globe, Edit3, Layout, CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { encryptData, decryptData } from './utils/encryption';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const getFavicon = (url) => {
     try {
@@ -29,6 +30,17 @@ export default function PopupApp() {
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+    const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+
+    useEffect(() => {
+        const handleOutsideClick = (e) => {
+            if (!e.target.closest('.category-menu-container')) {
+                setIsCategoryMenuOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
 
 
     useEffect(() => {
@@ -121,25 +133,25 @@ export default function PopupApp() {
 
     if (loading) {
         return (
-            <div className="w-[350px] min-h-[400px] flex items-center justify-center bg-gray-900 text-white">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            <div className="w-[350px] min-h-[400px] flex items-center justify-center bg-[#040b16] text-white">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
             </div>
         );
     }
 
     if (!currentUser) {
         return (
-            <div className="w-[350px] min-h-[400px] p-5 bg-gray-900 text-white font-sans flex flex-col items-center justify-center">
+            <div className="w-[350px] min-h-[400px] p-5 bg-[#040b16] text-slate-200 font-sans flex flex-col items-center justify-center">
                 <img src="/favicon.png" alt="logo" className="h-16 w-16 mb-4" />
                 <h1 className="text-3xl font-bold font-['Pacifico'] mb-3">TabStack</h1>
-                <p className="text-gray-400 text-center text-sm mb-8 px-2">
+                <p className="text-slate-400 text-center text-sm mb-8 px-2">
                     Please log into the TabStack web application to start saving links.
                 </p>
                 <a
                     href="https://tabstack-9eea3.web.app/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-center font-medium py-3 rounded-lg transition-colors shadow-lg"
+                    className="w-full bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 text-center font-medium py-3 rounded-lg transition-colors shadow-lg"
                 >
                     Log In to TabStack
                 </a>
@@ -149,15 +161,15 @@ export default function PopupApp() {
 
     if (success) {
         return (
-            <div className="w-[350px] min-h-[300px] flex flex-col items-center justify-center bg-gray-900 text-white font-sans">
-                <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
+            <div className="w-[350px] min-h-[300px] flex flex-col items-center justify-center bg-[#040b16] text-slate-200 font-sans">
+                <CheckCircle className="w-16 h-16 text-emerald-500 mb-4" />
                 <h2 className="text-xl font-bold">Saved successfully!</h2>
             </div>
         );
     }
 
     return (
-        <div className="w-[350px] p-5 bg-gray-900 text-white font-sans">
+        <div className="w-[350px] p-5 bg-[#040b16] text-slate-200 font-sans">
             <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                     <img src="/favicon.png" alt="logo" className="h-5 w-5" />
@@ -167,7 +179,7 @@ export default function PopupApp() {
                     href="https://tabstack-9eea3.web.app"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-gray-400 hover:text-white transition-colors"
+                    className="text-slate-500 hover:text-slate-300 transition-colors"
                     title="Open TabStack"
                 >
                     <ExternalLink className="w-5 h-5" />
@@ -183,65 +195,91 @@ export default function PopupApp() {
 
             <form onSubmit={handleSave} className="space-y-3">
                 <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1">URL</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">URL</label>
                     <div className="relative">
-                        <Globe className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <Globe className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <input
                             type="text"
                             value={url}
                             onChange={(e) => setUrl(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded py-1.5 pl-9 pr-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full bg-[#0a1226] border border-indigo-500/20 rounded py-1.5 pl-9 pr-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
                             required
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1">Title</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Title</label>
                     <div className="relative">
-                        <Edit3 className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                        <Edit3 className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded py-1.5 pl-9 pr-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full bg-[#0a1226] border border-indigo-500/20 rounded py-1.5 pl-9 pr-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
                             required
                         />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1">Category</label>
-                    <div className="relative">
-                        <Layout className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                        <select
-                            value={categoryId}
-                            onChange={(e) => setCategoryId(e.target.value)}
-                            className="w-full bg-gray-800 border border-gray-700 rounded py-1.5 pl-9 pr-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
-                            required
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Category</label>
+                    <div className="relative category-menu-container">
+                        <button
+                            type="button"
+                            onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
+                            className="w-full flex items-center justify-between bg-[#0a1226]/40 backdrop-blur-xl border border-indigo-500/20 rounded py-1.5 pl-9 pr-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
                         >
-                            {categories.length === 0 ? (
-                                <option value="" disabled>No categories found</option>
-                            ) : (
-                                categories.map(cat => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))
-                            )}
-                        </select>
-                        <div className="pointer-events-none absolute right-2.5 top-1/2 transform -translate-y-1/2">
-                            <svg className="h-4 w-4 text-gray-500 fill-current" viewBox="0 0 20 20">
+                            <div className="flex items-center gap-2">
+                                <Layout className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
+                                <span className="truncate">
+                                    {categories.find(c => c.id === categoryId)?.name || 'Select a category'}
+                                </span>
+                            </div>
+                            <svg className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isCategoryMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                             </svg>
-                        </div>
+                        </button>
+                        
+                        <AnimatePresence>
+                            {isCategoryMenuOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -5 }}
+                                    transition={{ duration: 0.15 }}
+                                    className="absolute top-full left-0 mt-1 w-full rounded bg-[#040b16]/95 backdrop-blur-xl shadow-lg border border-indigo-500/20 py-1 z-50 max-h-[150px] overflow-y-auto"
+                                >
+                                    {categories.length === 0 ? (
+                                        <div className="px-3 py-2 text-sm text-slate-500">No categories found</div>
+                                    ) : (
+                                        categories.map(cat => (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setCategoryId(cat.id);
+                                                    setIsCategoryMenuOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center justify-between ${categoryId === cat.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-300 hover:bg-white/5'}`}
+                                            >
+                                                <span className="truncate">{cat.name}</span>
+                                                {categoryId === cat.id && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>}
+                                            </button>
+                                        ))
+                                    )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-xs font-medium text-gray-400 mb-1">Description (Optional)</label>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Description (Optional)</label>
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="w-full bg-gray-800 border border-gray-700 rounded py-1.5 px-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                        className="w-full bg-[#0a1226] border border-indigo-500/20 rounded py-1.5 px-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none resize-none transition-all"
                         rows={2}
                     />
                 </div>
@@ -249,7 +287,7 @@ export default function PopupApp() {
                 <button
                     type="submit"
                     disabled={saving || categories.length === 0}
-                    className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 text-sm rounded transition-colors disabled:opacity-50"
+                    className="w-full mt-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 font-medium py-2 text-sm rounded-lg transition-all disabled:opacity-50 active:scale-[0.98]"
                 >
                     {saving ? 'Saving...' : 'Save Link'}
                 </button>

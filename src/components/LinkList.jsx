@@ -9,7 +9,7 @@ import {
   updateDoc
 } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
-import { Bookmark, Pencil, Trash2, Link2, Copy, Check, Pin } from "lucide-react";
+import { Bookmark, Pencil, Trash2, Link2, Copy, Check, Pin, SearchX } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import { decryptData } from "../utils/encryption";
@@ -109,12 +109,26 @@ export default function LinkList({
   if (loading) return <div className="text-white p-6">Loading...</div>;
 
   if (links.length === 0) {
+    if (searchQuery) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[80%] text-center opacity-80">
+          <SearchX className="h-16 w-16 text-indigo-500/50 mb-4 drop-shadow-lg" />
+          <h2 className="text-2xl font-bold text-zinc-300 mb-2">
+            No results found
+          </h2>
+          <p className="text-sm text-zinc-500 font-medium max-w-md">
+            We couldn't find any links matching "{searchQuery}". Try a different keyword or spelling.
+          </p>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex flex-col items-center justify-center h-[80%] text-center">
-        <Bookmark className="h-16 w-16 text-blue-500 mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-2">
+      <div className="flex flex-col items-center justify-center h-[80%] text-center opacity-80">
+        <Bookmark className="h-16 w-16 text-indigo-500/50 mb-4 drop-shadow-lg" />
+        <h2 className="text-2xl font-bold text-zinc-300 mb-2">
           No links yet <br />
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-zinc-500 font-medium">
             Start adding your favorite links to keep them organized
           </span>
         </h2>
@@ -123,31 +137,46 @@ export default function LinkList({
   }
 
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <motion.div 
+      key={selectedCategoryId || "all"}
+      variants={{
+        hidden: { opacity: 0 },
+        show: {
+          opacity: 1,
+          transition: { staggerChildren: 0.04 }
+        }
+      }}
+      initial="hidden"
+      animate="show"
+      className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    >
       {links.map((link) => (
         <motion.div
+          variants={{
+            hidden: { opacity: 0, y: 15, scale: 0.98 },
+            show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.25, ease: "easeOut" } }
+          }}
           key={link.id}
-          initial={{ rotateY: 90, opacity: 0 }}
-          animate={{ rotateY: 0, opacity: 1 }}
-          transition={{ duration: 0.05, ease: "easeOut" }}
-          className="flex flex-col bg-gray-800 rounded-xl p-4 shadow-md border border-gray-700 transform transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:border-blue-600"
+          className="flex flex-col bg-[#0a1226]/60 backdrop-blur-md rounded-xl p-4 shadow-[0_4px_15px_-3px_rgba(0,0,0,0.3)] border border-indigo-500/10 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_25px_-5px_rgba(99,102,241,0.2)] hover:border-indigo-400/30 hover:bg-[#0a1226]"
         >
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-2 mb-2">
             {link.favicon ? (
               <img
                 src={link.favicon}
                 alt=""
-                className="w-5 h-5 rounded-sm bg-white/10 p-0.5 object-contain"
+                className="w-6 h-6 rounded-md bg-white/5 p-1 object-contain border border-white/5 shadow-sm"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
             ) : (
-              <Link2 className="w-5 h-5 text-gray-500" />
+              <div className="w-6 h-6 rounded-md bg-white/5 p-1 flex items-center justify-center border border-white/5 shadow-sm">
+                <Link2 className="w-4 h-4 text-zinc-500" />
+              </div>
             )}
             <a
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-shadow-gray-100 hover:underline text-sm font-bold truncate flex-1"
+              className="text-slate-100 hover:text-indigo-400 hover:underline text-sm font-semibold truncate flex-1 transition-colors"
             >
               {link.title}
             </a>
@@ -159,13 +188,13 @@ export default function LinkList({
                 setCopiedId(link.id);
                 setTimeout(() => setCopiedId(null), 3000);
               }}
-              className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-md transition-colors flex-shrink-0"
+              className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/10 rounded-lg transition-all active:scale-95 flex-shrink-0"
               title="Copy Link"
             >
               {copiedId === link.id ? (
-                <Check size={14} className="text-green-400" />
+                <Check size={16} className="text-emerald-400" />
               ) : (
-                <Copy size={14} />
+                <Copy size={16} />
               )}
             </button>
             <button
@@ -173,39 +202,39 @@ export default function LinkList({
                 e.preventDefault();
                 togglePin(link);
               }}
-              className={`p-1.5 rounded-md transition-colors flex-shrink-0 ${link.isPinned ? 'text-blue-400 bg-blue-400/10 hover:bg-blue-400/20' : 'text-gray-400 hover:text-white hover:bg-gray-700'}`}
+              className={`p-1.5 rounded-lg transition-all active:scale-95 flex-shrink-0 ${link.isPinned ? 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20' : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/10'}`}
               title={link.isPinned ? "Unpin Link" : "Pin Link"}
             >
-              <Pin size={14} className={link.isPinned ? "fill-current" : ""} />
+              <Pin size={16} className={link.isPinned ? "fill-current" : ""} />
             </button>
           </div>
 
-          <p className="text-gray-400 text-xs line-clamp-2 mb-2 flex-1">
+          <p className="text-slate-400 text-xs leading-relaxed line-clamp-2 mb-3 flex-1">
             {link.description}
           </p>
 
-          <div className="flex justify-end gap-2 mt-auto pt-3">
+          <div className="flex justify-end gap-2 mt-auto pt-3 border-t border-indigo-500/10">
             <button
               onClick={() => {
                 setLinkToEdit(link);
                 setIsLinkFormOpen(true);
               }}
-              className="flex items-center gap-1 border border-blue-500 text-blue-400 hover:bg-blue-600/10 px-2 py-1 text-xs rounded-md transition-all"
+              className="flex items-center gap-1.5 bg-white/5 border border-white/5 text-zinc-300 hover:bg-white/10 hover:text-white px-2.5 py-1.5 text-xs rounded-lg transition-all active:scale-95 font-medium"
             >
-              <Pencil size={14} />
+              <Pencil size={13} />
               Edit
             </button>
             <button
               onClick={() => handleDelete(link.id)}
-              className="flex items-center gap-1 border border-red-500 text-red-400 hover:bg-red-600/10 px-2 py-1 text-xs rounded-md transition-all"
+              className="flex items-center gap-1.5 bg-red-500/5 border border-red-500/10 text-red-400 hover:bg-red-500/10 hover:text-red-300 px-2.5 py-1.5 text-xs rounded-lg transition-all active:scale-95 font-medium"
             >
-              <Trash2 size={14} />
+              <Trash2 size={13} />
               Delete
             </button>
           </div>
 
         </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }

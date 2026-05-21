@@ -3,10 +3,31 @@
 * {
 	scroll-behavior: smooth;
 	scrollbar-width: thin;
-	scrollbar-color: rgba(125, 125, 164, 0.3) rgba(25, 22, 48, 0.356);
+	scrollbar-color: rgba(99, 102, 241, 0.3) rgba(9, 9, 11, 0.8);
+}
+
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: rgba(9, 9, 11, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(99, 102, 241, 0.3);
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(99, 102, 241, 0.5);
 }
 
 html,
 body {
 	scroll-behavior: smooth !important;
+	overscroll-behavior: none;
+	background-color: #040b1c;
+	/* Match dashboard slate-900 background */
 }

@@ -135,15 +135,15 @@ const LinkForm = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-md overflow-hidden rounded-2xl bg-gray-900 p-6 shadow-[0_0_40px_-15px_rgba(0,0,0,0.5)] border border-gray-800"
+              className="relative w-full max-w-md overflow-hidden rounded-2xl bg-[#040b16]/95 backdrop-blur-xl p-6 shadow-[0_0_40px_-15px_rgba(0,0,0,0.5)] border border-indigo-500/20"
             >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-xl font-bold text-slate-200">
                   {linkToEdit ? 'Edit Link' : 'Add New Link'}
                 </h2>
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-white transition-colors"
+                  className="text-slate-400 hover:text-slate-200 transition-colors"
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -158,17 +158,17 @@ const LinkForm = ({
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="url" className="block text-sm font-medium text-gray-300 mb-1">
+                  <label htmlFor="url" className="block text-sm font-medium text-slate-300 mb-1">
                     URL
                   </label>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <input
                       id="url"
                       type="text"
                       value={url}
                       onChange={(e) => setUrl(e.target.value)}
-                      className="pl-10 w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="pl-10 w-full bg-[#0a1226] border border-indigo-500/20 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                       placeholder="https://example.com"
                       required
                     />
@@ -176,17 +176,17 @@ const LinkForm = ({
                 </div>
 
                 <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-1">
+                  <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-1">
                     Title
                   </label>
                   <div className="relative">
-                    <Edit3 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Edit3 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <input
                       id="title"
                       type="text"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      className="pl-10 w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="pl-10 w-full bg-[#0a1226] border border-indigo-500/20 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                       placeholder="My favorite website"
                       required
                     />
@@ -194,30 +194,30 @@ const LinkForm = ({
                 </div>
 
                 <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-300 mb-1">
+                  <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-1">
                     Description (optional)
                   </label>
                   <textarea
                     id="description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full bg-[#0a1226] border border-indigo-500/20 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                     placeholder="A brief description of this link"
                     rows={3}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-gray-300 mb-1">
+                  <label htmlFor="category" className="block text-sm font-medium text-slate-300 mb-1">
                     Category
                   </label>
                   <div className="relative">
-                    <Layout className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Layout className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <select
                       id="category"
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      className="pl-10 w-full bg-gray-800 border border-gray-700 rounded-lg py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+                      className="pl-10 w-full bg-[#0a1226] border border-indigo-500/20 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none transition-all"
                       required
                     >
                       <option value="" disabled>Select a category</option>
@@ -227,7 +227,7 @@ const LinkForm = ({
                         </option>
                       ))}
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-400">
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
                       <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
                         <path
                           fillRule="evenodd"
@@ -240,14 +240,17 @@ const LinkForm = ({
                 </div>
 
                 <div>
-                  <label className="flex items-center space-x-2 cursor-pointer">
+                  <label className="flex items-center space-x-3 cursor-pointer w-fit group">
+                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${isPinned ? 'bg-indigo-500/20 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.3)]' : 'bg-[#0a1226] border-indigo-500/20 group-hover:border-indigo-500/50'}`}>
+                      {isPinned && <div className="w-2.5 h-2.5 rounded-full bg-indigo-400" />}
+                    </div>
                     <input
                       type="checkbox"
                       checked={isPinned}
                       onChange={(e) => setIsPinned(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500 focus:ring-2"
+                      className="hidden"
                     />
-                    <span className="text-sm font-medium text-gray-300">Pin this link to the top</span>
+                    <span className="text-sm font-medium text-slate-300 group-hover:text-slate-100 transition-colors">Pin this link to the top</span>
                   </label>
                 </div>
 
@@ -255,17 +258,16 @@ const LinkForm = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+                    className="px-4 py-2 bg-[#0a1226] hover:bg-[#111c3b] border border-indigo-500/20 text-slate-300 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500
-                  text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all duration-300 
-                  transform hover:-translate-y-0.5 border border-white/10 active:scale-95 
-                  disabled:opacity-50 disabled:pointer-events-none"
+                    className="px-5 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 border border-indigo-500/20 
+                  font-medium rounded-lg transition-all duration-300 
+                  active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {loading ? 'Saving...' : linkToEdit ? 'Update Link' : 'Add Link'}
                   </button>
