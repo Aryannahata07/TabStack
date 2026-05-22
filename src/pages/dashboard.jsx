@@ -161,7 +161,7 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center justify-between text-xs font-semibold tracking-wider mb-2 mt-8 text-zinc-500 px-2">
           <span className="uppercase">Categories</span>
-          <button onClick={() => setIsAddCategoryOpen(true)} className="p-1 rounded-md hover:bg-white/10 transition-colors">
+          <button onClick={() => setIsAddCategoryOpen(true)} className="p-1 rounded-md hover:bg-white/10 transition-colors" aria-label="Add Category">
              <FaPlus className="cursor-pointer text-zinc-400 hover:text-zinc-200 transition-colors" />
           </button>
         </div>
@@ -183,7 +183,7 @@ export default function Dashboard() {
               </button>
               {category.id !== "all" && (
                 <div className="absolute right-2 top-2.5 category-menu-container opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-1 rounded-md hover:bg-white/10 transition-colors" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === category.id ? null : category.id); }}>
+                  <button className="p-1 rounded-md hover:bg-white/10 transition-colors" onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === category.id ? null : category.id); }} aria-label="Category Options">
                     <FaEllipsisV className="text-slate-400 hover:text-slate-200" size={12} />
                   </button>
                   {openMenuId === category.id && (
@@ -215,13 +215,14 @@ export default function Dashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 relative z-10">
+      <main className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-8 py-5 border-b border-indigo-500/10 bg-[#0a1226]/40 backdrop-blur-xl shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)] sticky top-0 z-30 gap-4">
           <div className="flex items-center flex-1 max-w-2xl">
             <button
               className="lg:hidden mr-4 text-zinc-400 hover:text-zinc-200 transition-colors p-2 rounded-lg hover:bg-white/5"
               onClick={() => setIsSidebarOpen(true)}
+              aria-label="Open Sidebar"
             >
               <FaBars size={24} />
             </button>
@@ -365,7 +366,7 @@ export default function Dashboard() {
         </div>
 
 
-      </div>
+      </main>
 
       {/* Modal */}
       <CategoryForm

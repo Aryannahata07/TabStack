@@ -133,15 +133,15 @@ export default function PopupApp() {
 
     if (loading) {
         return (
-            <div className="w-[350px] min-h-[400px] flex items-center justify-center bg-[#040b16] text-white">
+            <main className="w-[350px] min-h-[400px] flex items-center justify-center bg-[#040b16] text-white">
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-            </div>
+            </main>
         );
     }
 
     if (!currentUser) {
         return (
-            <div className="w-[350px] min-h-[400px] p-5 bg-[#040b16] text-slate-200 font-sans flex flex-col items-center justify-center">
+            <main className="w-[350px] min-h-[400px] p-5 bg-[#040b16] text-slate-200 font-sans flex flex-col items-center justify-center">
                 <img src="/favicon.png" alt="logo" className="h-16 w-16 mb-4" />
                 <h1 className="text-3xl font-bold font-['Pacifico'] mb-3">TabStack</h1>
                 <p className="text-slate-400 text-center text-sm mb-8 px-2">
@@ -155,21 +155,21 @@ export default function PopupApp() {
                 >
                     Log In to TabStack
                 </a>
-            </div>
+            </main>
         );
     }
 
     if (success) {
         return (
-            <div className="w-[350px] min-h-[300px] flex flex-col items-center justify-center bg-[#040b16] text-slate-200 font-sans">
+            <main className="w-[350px] min-h-[300px] flex flex-col items-center justify-center bg-[#040b16] text-slate-200 font-sans">
                 <CheckCircle className="w-16 h-16 text-emerald-500 mb-4" />
                 <h2 className="text-xl font-bold">Saved successfully!</h2>
-            </div>
+            </main>
         );
     }
 
     return (
-        <div className="w-[350px] p-5 bg-[#040b16] text-slate-200 font-sans">
+        <main className="w-[350px] p-5 bg-[#040b16] text-slate-200 font-sans">
             <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
                     <img src="/favicon.png" alt="logo" className="h-5 w-5" />
@@ -181,6 +181,7 @@ export default function PopupApp() {
                     rel="noopener noreferrer"
                     className="text-slate-500 hover:text-slate-300 transition-colors"
                     title="Open TabStack"
+                    aria-label="Open TabStack"
                 >
                     <ExternalLink className="w-5 h-5" />
                 </a>
@@ -292,6 +293,6 @@ export default function PopupApp() {
                     {saving ? 'Saving...' : 'Save Link'}
                 </button>
             </form>
-        </div>
+        </main>
     );
 }

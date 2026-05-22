@@ -190,6 +190,7 @@ export default function LinkList({
               }}
               className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-white/10 rounded-lg transition-all active:scale-95 flex-shrink-0"
               title="Copy Link"
+              aria-label="Copy Link"
             >
               {copiedId === link.id ? (
                 <Check size={16} className="text-emerald-400" />
@@ -204,6 +205,7 @@ export default function LinkList({
               }}
               className={`p-1.5 rounded-lg transition-all active:scale-95 flex-shrink-0 ${link.isPinned ? 'text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20' : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/10'}`}
               title={link.isPinned ? "Unpin Link" : "Pin Link"}
+              aria-label={link.isPinned ? "Unpin Link" : "Pin Link"}
             >
               <Pin size={16} className={link.isPinned ? "fill-current" : ""} />
             </button>
