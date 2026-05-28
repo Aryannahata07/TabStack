@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from './context/AuthContext';
 import { db } from './firebase/config';
 import { collection, query, getDocs, addDoc } from 'firebase/firestore';
 import { Globe, Edit3, Layout, CheckCircle, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { encryptData, decryptData } from './utils/encryption';
 import { motion, AnimatePresence } from 'framer-motion';
+import { colorOptions, iconMap } from './utils/constants';
+import { useKeyboardSelect } from './hooks/useKeyboardSelect';
 
 const getFavicon = (url) => {
     try {
@@ -31,6 +33,36 @@ export default function PopupApp() {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+
+    // Refs for keyboard navigation
+    const triggerRef = useRef(null);
+    // listRef points at the inner scrollable div so scrollIntoView works correctly
+    const listRef = useRef(null);
+
+    // Options list for dropdown keyboard navigation
+    const dropdownOptions = [
+        ...categories.map(cat => ({ id: cat.id, name: cat.name })),
+        { id: 'new_category', name: 'Add New Category...' }
+    ];
+
+    const {
+        highlightedIndex,
+        setHighlightedIndex,
+        handleKeyDown
+    } = useKeyboardSelect({
+        isOpen: isCategoryMenuOpen,
+        setIsOpen: setIsCategoryMenuOpen,
+        options: dropdownOptions,
+        selectedValue: categoryId,
+        onSelect: setCategoryId,
+        triggerRef,
+        listRef,
+    });
+
+    // New Category State
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryIcon, setNewCategoryIcon] = useState('folder');
+    const [newCategoryColor, setNewCategoryColor] = useState('text-blue-400');
 
     useEffect(() => {
         const handleOutsideClick = (e) => {
@@ -98,6 +130,20 @@ export default function PopupApp() {
             return;
         }
 
+        if (categoryId === 'new_category') {
+            if (!newCategoryName.trim()) {
+                setError('Category name is required');
+                return;
+            }
+            const nameExists = categories.some(
+                (cat) => cat.name.toLowerCase() === newCategoryName.trim().toLowerCase()
+            );
+            if (nameExists) {
+                setError('A category with this name already exists');
+                return;
+            }
+        }
+
         setSaving(true);
         setError('');
 
@@ -111,11 +157,26 @@ export default function PopupApp() {
             const timestamp = Date.now();
             const uid = currentUser.uid;
 
+            let finalCategoryId = categoryId;
+            if (categoryId === 'new_category') {
+                const categoryData = {
+                    name: encryptData(newCategoryName.trim(), uid),
+                    icon: newCategoryIcon,
+                    color: newCategoryColor,
+                    order: categories.length
+                };
+                const catRef = await addDoc(
+                    collection(db, 'users', uid, 'categories'),
+                    categoryData
+                );
+                finalCategoryId = catRef.id;
+            }
+
             await addDoc(collection(db, "users", uid, "links"), {
                 url: encryptData(formattedUrl, uid),
                 title: encryptData(title.trim(), uid),
                 description: encryptData(description.trim(), uid),
-                categoryId: categoryId,
+                categoryId: finalCategoryId,
                 favicon,
                 createdAt: timestamp,
                 updatedAt: timestamp
@@ -225,16 +286,21 @@ export default function PopupApp() {
 
                 <div>
                     <label className="block text-xs font-medium text-slate-400 mb-1">Category</label>
-                    <div className="relative category-menu-container">
+                     <div className="relative category-menu-container">
                         <button
+                            ref={triggerRef}
                             type="button"
+                            role="combobox"
+                            aria-expanded={isCategoryMenuOpen}
+                            aria-haspopup="listbox"
+                            onKeyDown={handleKeyDown}
                             onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
                             className="w-full flex items-center justify-between bg-[#0a1226]/40 backdrop-blur-xl border border-indigo-500/20 rounded py-1.5 pl-9 pr-3 text-sm text-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all"
                         >
                             <div className="flex items-center gap-2">
                                 <Layout className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500" />
                                 <span className="truncate">
-                                    {categories.find(c => c.id === categoryId)?.name || 'Select a category'}
+                                    {categoryId === 'new_category' ? 'Add New Category...' : (categories.find(c => c.id === categoryId)?.name || 'Select a category')}
                                 </span>
                             </div>
                             <svg className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${isCategoryMenuOpen ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
@@ -245,34 +311,125 @@ export default function PopupApp() {
                         <AnimatePresence>
                             {isCategoryMenuOpen && (
                                 <motion.div
+                                    role="listbox"
                                     initial={{ opacity: 0, y: -5 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -5 }}
                                     transition={{ duration: 0.15 }}
-                                    className="absolute top-full left-0 mt-1 w-full rounded bg-[#040b16]/95 backdrop-blur-xl shadow-lg border border-indigo-500/20 py-1 z-50 max-h-[150px] overflow-y-auto"
+                                    className="absolute top-full left-0 mt-1 w-full rounded bg-[#040b16]/95 backdrop-blur-xl shadow-lg border border-indigo-500/20 py-1 z-50 flex flex-col"
                                 >
-                                    {categories.length === 0 ? (
-                                        <div className="px-3 py-2 text-sm text-slate-500">No categories found</div>
-                                    ) : (
-                                        categories.map(cat => (
-                                            <button
-                                                key={cat.id}
-                                                type="button"
-                                                onClick={() => {
-                                                    setCategoryId(cat.id);
-                                                    setIsCategoryMenuOpen(false);
-                                                }}
-                                                className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center justify-between ${categoryId === cat.id ? 'bg-indigo-500/20 text-indigo-300' : 'text-slate-300 hover:bg-white/5'}`}
-                                            >
-                                                <span className="truncate">{cat.name}</span>
-                                                {categoryId === cat.id && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>}
-                                            </button>
-                                        ))
+                                    <div ref={listRef} className="max-h-[110px] overflow-y-auto">
+                                        {categories.map((cat, idx) => {
+                                            const isSelected = categoryId === cat.id;
+                                            const isHighlighted = highlightedIndex === idx;
+                                            return (
+                                                <button
+                                                    key={cat.id}
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={isSelected}
+                                                    tabIndex={-1}
+                                                    onMouseEnter={() => setHighlightedIndex(idx)}
+                                                    onClick={() => {
+                                                        setCategoryId(cat.id);
+                                                        setIsCategoryMenuOpen(false);
+                                                    }}
+                                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center justify-between ${isSelected ? 'bg-indigo-500/20 text-indigo-300' : isHighlighted ? 'bg-white/10 text-slate-200' : 'text-slate-300'}`}
+                                                >
+                                                    <span className="truncate">{cat.name}</span>
+                                                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    
+                                    {categories.length > 0 && (
+                                        <div className="border-t border-indigo-500/10 my-1" />
                                     )}
+                                    
+                                    <button
+                                        type="button"
+                                        role="option"
+                                        aria-selected={categoryId === 'new_category'}
+                                        tabIndex={-1}
+                                        onMouseEnter={() => setHighlightedIndex(categories.length)}
+                                        onClick={() => {
+                                            setCategoryId('new_category');
+                                            setIsCategoryMenuOpen(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-1.5 text-sm font-semibold transition-colors flex items-center justify-between ${categoryId === 'new_category' ? 'bg-indigo-500/20 text-indigo-300' : highlightedIndex === categories.length ? 'bg-white/10 text-slate-200' : 'text-indigo-400'}`}
+                                    >
+                                        <span>Add New Category...</span>
+                                    </button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
+
+                <AnimatePresence>
+                    {categoryId === 'new_category' && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                            animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
+                            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                            className="overflow-hidden border border-indigo-500/20 bg-[#0a1226]/50 rounded-xl p-4 space-y-3"
+                        >
+                            <div>
+                                <label htmlFor="newCategoryName" className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                                    New Category Name
+                                </label>
+                                <div className="relative">
+                                    <Edit3 className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                                    <input
+                                        id="newCategoryName"
+                                        type="text"
+                                        value={newCategoryName}
+                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                        className="pl-8 w-full bg-[#0a1226] border border-indigo-500/20 rounded py-1 px-2.5 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-xs"
+                                        placeholder="e.g. Reference, Entertainment"
+                                        required={categoryId === 'new_category'}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Icon</span>
+                                    <div className="grid grid-cols-4 gap-1 bg-[#040b16] p-1 rounded border border-indigo-500/10">
+                                        {Object.entries(iconMap).map(([key, IconComponent]) => (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                onClick={() => setNewCategoryIcon(key)}
+                                                className={`p-1 rounded flex items-center justify-center transition-all ${newCategoryIcon === key ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent'}`}
+                                                title={key}
+                                            >
+                                                <IconComponent className="h-3.5 w-3.5" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Color</span>
+                                    <div className="grid grid-cols-4 gap-1 bg-[#040b16] p-1 rounded border border-indigo-500/10">
+                                        {colorOptions.map((option) => (
+                                            <button
+                                                key={option.value}
+                                                type="button"
+                                                onClick={() => setNewCategoryColor(option.value)}
+                                                className={`h-5 w-5 rounded-full flex items-center justify-center transition-all ${newCategoryColor === option.value ? 'ring-2 ring-white scale-105' : 'hover:scale-105'}`}
+                                            >
+                                                <div className={`w-3.5 h-3.5 rounded-full ${option.bg} shadow-md`}></div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
                 </div>
 
                 <div>

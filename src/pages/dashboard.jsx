@@ -30,6 +30,7 @@ import {
   Music,
   Link2,
   Bookmark,
+  X,
 } from "lucide-react";
 import {
   collection,
@@ -140,24 +141,39 @@ export default function Dashboard() {
       <div className="absolute top-[-20%] left-[-10%] w-[120%] h-[60%] bg-indigo-500/10 blur-[120px] pointer-events-none z-0 rounded-full"></div>
       
       {/* Mobile Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-[#0a1226]/40 backdrop-blur-xl border-r border-indigo-500/10 p-4 flex flex-col 
-        transform transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]
+        fixed inset-y-0 left-0 z-50 w-64 bg-[#0a1226] lg:bg-[#0a1226]/40 lg:backdrop-blur-xl border-r border-indigo-500/10 p-4 flex flex-col 
+        transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]
         shadow-[4px_0_24px_-4px_rgba(0,0,0,0.5)] lg:shadow-none
         lg:translate-x-0 lg:static lg:inset-auto
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex gap-2 items-center px-2">
-          <img src="/favicon.png" alt="logo" className="h-8 w-8 object-contain" />
-          <h1 className="text-3xl font-bold font-['Pacifico']">TabStack</h1>
+        <div className="flex gap-2 items-center justify-between px-2">
+          <div className="flex gap-2 items-center">
+            <img src="/favicon.png" alt="logo" className="h-8 w-8 object-contain" />
+            <h1 className="text-3xl font-bold font-['Pacifico']">TabStack</h1>
+          </div>
+          <button
+            className="lg:hidden text-zinc-400 hover:text-zinc-200 transition-all duration-200 p-1.5 rounded-lg hover:bg-white/5 active:scale-95 cursor-pointer"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close Sidebar"
+          >
+            <X size={20} />
+          </button>
         </div>
         <div className="flex items-center justify-between text-xs font-semibold tracking-wider mb-2 mt-8 text-zinc-500 px-2">
           <span className="uppercase">Categories</span>
@@ -220,7 +236,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between px-4 sm:px-8 py-5 border-b border-indigo-500/10 bg-[#0a1226]/40 backdrop-blur-xl shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)] sticky top-0 z-30 gap-4">
           <div className="flex items-center flex-1 max-w-2xl">
             <button
-              className="lg:hidden mr-4 text-zinc-400 hover:text-zinc-200 transition-colors p-2 rounded-lg hover:bg-white/5"
+              className="lg:hidden mr-4 text-zinc-400 hover:text-zinc-200 transition-all duration-200 p-2 rounded-lg hover:bg-white/5 active:scale-95 cursor-pointer"
               onClick={() => setIsSidebarOpen(true)}
               aria-label="Open Sidebar"
             >
@@ -394,10 +410,12 @@ export default function Dashboard() {
       <LinkForm
         isOpen={isLinkFormOpen}
         onClose={() => setIsLinkFormOpen(false)}
-        onSuccess={() => {
+        onSuccess={(newCat) => {
           setIsLinkFormOpen(false);
           setLinkToEdit(null);
-
+          if (newCat) {
+            setCategories((prev) => [...prev, newCat]);
+          }
         }}
         categories={categories}
         initialCategoryId={selectedCategory}  // if you're tracking selected category

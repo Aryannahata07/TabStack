@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
@@ -7,28 +7,8 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { encryptData, decryptData } from '../utils/encryption';
-
-const iconOptions = [
-  { value: 'folder', label: 'Folder' },
-  { value: 'grid', label: 'Grid' },
-  { value: 'bookopen', label: 'BookOpen' },
-  { value: 'code', label: 'Code' },
-  { value: 'coffee', label: 'Coffee' },
-  { value: 'film', label: 'Film' },
-  { value: 'music', label: 'Music' },
-  { value: 'link2', label: 'Link2' },
-];
-
-const colorOptions = [
-  { value: 'text-blue-400', label: 'Blue', bg: 'bg-blue-400' },
-  { value: 'text-green-400', label: 'Green', bg: 'bg-green-400' },
-  { value: 'text-purple-400', label: 'Purple', bg: 'bg-purple-400' },
-  { value: 'text-red-400', label: 'Red', bg: 'bg-red-400' },
-  { value: 'text-yellow-400', label: 'Yellow', bg: 'bg-yellow-400' },
-  { value: 'text-pink-400', label: 'Pink', bg: 'bg-pink-400' },
-  { value: 'text-indigo-400', label: 'Indigo', bg: 'bg-indigo-400' },
-  { value: 'text-gray-400', label: 'Gray', bg: 'bg-gray-400' },
-];
+import { colorOptions, iconOptions, iconMap } from '../utils/constants';
+import { useKeyboardSelect } from '../hooks/useKeyboardSelect';
 
 const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories, categoryToEdit }) => {
   const { currentUser } = useAuth();
@@ -37,6 +17,35 @@ const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories, category
   const [color, setColor] = useState('text-blue-400');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isIconMenuOpen, setIsIconMenuOpen] = useState(false);
+
+  // Refs for keyboard navigation
+  const triggerRef = useRef(null);
+  const listRef = useRef(null);
+
+  const {
+    highlightedIndex,
+    setHighlightedIndex,
+    handleKeyDown
+  } = useKeyboardSelect({
+    isOpen: isIconMenuOpen,
+    setIsOpen: setIsIconMenuOpen,
+    options: iconOptions,
+    selectedValue: icon,
+    onSelect: setIcon,
+    triggerRef,
+    listRef,
+  });
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.icon-menu-container')) {
+        setIsIconMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   useEffect(() => {
     if (categoryToEdit && isOpen) {
@@ -45,11 +54,13 @@ const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories, category
       setIcon(categoryToEdit.icon || 'folder');
       setColor(categoryToEdit.color || 'text-blue-400');
       setError('');
+      setIsIconMenuOpen(false);
     } else if (!categoryToEdit && isOpen) {
       setName('');
       setIcon('folder');
       setColor('text-blue-400');
       setError('');
+      setIsIconMenuOpen(false);
     }
   }, [categoryToEdit, isOpen]);
 
@@ -168,32 +179,76 @@ const CategoryForm = ({ isOpen, onClose, onSuccess, existingCategories, category
                 </div>
 
                 <div>
-                  <label htmlFor="icon" className="block text-sm font-medium text-slate-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
                     Icon
                   </label>
-                  <div className="relative">
-                    <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                    <select
-                      id="icon"
-                      value={icon}
-                      onChange={(e) => setIcon(e.target.value)}
-                      className="pl-10 w-full bg-[#0a1226] border border-indigo-500/20 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none transition-all"
+                  <div className="relative icon-menu-container">
+                    <button
+                      ref={triggerRef}
+                      type="button"
+                      role="combobox"
+                      aria-expanded={isIconMenuOpen}
+                      aria-haspopup="listbox"
+                      onKeyDown={handleKeyDown}
+                      onClick={() => setIsIconMenuOpen(!isIconMenuOpen)}
+                      className={`w-full flex items-center justify-between bg-[#0a1226] border rounded-lg py-2 px-3 text-sm text-slate-200 outline-none transition-all duration-300 relative z-10
+                        ${isIconMenuOpen ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-indigo-500/20 hover:border-indigo-500/40'}
+                      `}
                     >
-                      {iconOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                      <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
+                      <div className="flex items-center gap-2.5">
+                        {(() => {
+                          const SelectedIconComp = iconMap[icon.toLowerCase()] || iconMap.folder;
+                          return <SelectedIconComp className="h-4 w-4 text-indigo-400" />;
+                        })()}
+                        <span className="truncate">
+                          {iconOptions.find(o => o.value === icon)?.label || 'Folder'}
+                        </span>
+                      </div>
+                      <svg className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${isIconMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </div>
+                    </button>
+
+                    <AnimatePresence>
+                      {isIconMenuOpen && (
+                        <motion.div
+                          ref={listRef}
+                          role="listbox"
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute top-full left-0 mt-1.5 w-full rounded-xl bg-[#040b16]/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-indigo-500/20 py-1.5 z-30 max-h-[180px] overflow-y-auto"
+                        >
+                           {iconOptions.map((option, idx) => {
+                            const IconComp = iconMap[option.value.toLowerCase()] || iconMap.folder;
+                            const isSelected = icon === option.value;
+                            const isHighlighted = highlightedIndex === idx;
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                tabIndex={-1}
+                                onMouseEnter={() => setHighlightedIndex(idx)}
+                                onClick={() => {
+                                  setIcon(option.value);
+                                  setIsIconMenuOpen(false);
+                                }}
+                                className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between group ${isSelected ? 'bg-indigo-500/20 text-indigo-300' : isHighlighted ? 'bg-white/10 text-slate-200' : 'text-slate-300'}`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <IconComp className="h-4 w-4 text-slate-400 group-hover:text-indigo-400 transition-colors" />
+                                  <span className="truncate">{option.label}</span>
+                                </div>
+                                {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>}
+                              </button>
+                            );
+                          })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 

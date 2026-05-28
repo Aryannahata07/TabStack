@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { encryptData } from '../utils/encryption';
+import { colorOptions, iconMap } from '../utils/constants';
+import { useKeyboardSelect } from '../hooks/useKeyboardSelect';
 
 const getFavicon = (url) => {
   try {
@@ -34,6 +36,47 @@ const LinkForm = ({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // New Category states
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryIcon, setNewCategoryIcon] = useState('folder');
+  const [newCategoryColor, setNewCategoryColor] = useState('text-blue-400');
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+
+  // Refs for keyboard navigation
+  const triggerRef = useRef(null);
+  // listRef points at the inner scrollable div so scrollIntoView works correctly
+  const listRef = useRef(null);
+
+  // Options list for dropdown keyboard navigation
+  const dropdownOptions = [
+    ...categories.filter(c => c.id !== 'all').map(c => ({ id: c.id, name: c.name })),
+    { id: 'new_category', name: 'Add New Category...' }
+  ];
+
+  const {
+    highlightedIndex,
+    setHighlightedIndex,
+    handleKeyDown
+  } = useKeyboardSelect({
+    isOpen: isCategoryMenuOpen,
+    setIsOpen: setIsCategoryMenuOpen,
+    options: dropdownOptions,
+    selectedValue: categoryId,
+    onSelect: setCategoryId,
+    triggerRef,
+    listRef,
+  });
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (!e.target.closest('.category-menu-container')) {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   useEffect(() => {
     if (linkToEdit) {
       // Data is already decrypted in the LinkList before passing to this form
@@ -42,12 +85,37 @@ const LinkForm = ({
       setDescription(linkToEdit.description || '');
       setCategoryId(linkToEdit.categoryId);
       setIsPinned(linkToEdit.isPinned || false);
-    } else if (initialCategoryId) {
-      setCategoryId(initialCategoryId);
-    } else if (categories.length > 0) {
-      setCategoryId(categories[0].id);
+    } else {
+      const realCategories = categories.filter(c => c.id !== 'all');
+      if (initialCategoryId) {
+        const matched = realCategories.find(
+          (c) => c.id === initialCategoryId || c.name === initialCategoryId
+        );
+        if (matched) {
+          setCategoryId(matched.id);
+        } else if (realCategories.length > 0) {
+          setCategoryId(realCategories[0].id);
+        }
+      } else if (realCategories.length > 0) {
+        setCategoryId(realCategories[0].id);
+      }
     }
-  }, [linkToEdit, initialCategoryId, categories]);
+  }, [linkToEdit, initialCategoryId, categories, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setUrl('');
+      setTitle('');
+      setDescription('');
+      setCategoryId('');
+      setIsPinned(false);
+      setError('');
+      setNewCategoryName('');
+      setNewCategoryIcon('folder');
+      setNewCategoryColor('text-blue-400');
+      setIsCategoryMenuOpen(false);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -72,6 +140,20 @@ const LinkForm = ({
       return;
     }
 
+    if (categoryId === 'new_category') {
+      if (!newCategoryName.trim()) {
+        setError('Category name is required');
+        return;
+      }
+      const nameExists = categories.some(
+        (cat) => cat.name.toLowerCase() === newCategoryName.trim().toLowerCase()
+      );
+      if (nameExists) {
+        setError('A category with this name already exists');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       setError('');
@@ -84,11 +166,33 @@ const LinkForm = ({
       const favicon = getFavicon(formattedUrl);
       const timestamp = Date.now();
 
+      let finalCategoryId = categoryId;
+      let createdCategory = null;
+
+      if (categoryId === 'new_category') {
+        const categoryData = {
+          name: encryptData(newCategoryName.trim(), currentUser.uid),
+          icon: newCategoryIcon,
+          color: newCategoryColor,
+          order: categories.length
+        };
+        const catRef = await addDoc(
+          collection(db, 'users', currentUser.uid, 'categories'),
+          categoryData
+        );
+        finalCategoryId = catRef.id;
+        createdCategory = {
+          id: catRef.id,
+          ...categoryData,
+          name: newCategoryName.trim()
+        };
+      }
+
       const linkData = {
         url: encryptData(formattedUrl, currentUser.uid),
         title: encryptData(title.trim(), currentUser.uid),
         description: encryptData(description.trim(), currentUser.uid),
-        categoryId,
+        categoryId: finalCategoryId,
         isPinned,
         favicon,
         updatedAt: timestamp
@@ -106,7 +210,7 @@ const LinkForm = ({
         toast.success('Link added successfully');
       }
 
-      onSuccess();
+      onSuccess(createdCategory);
       onClose();
     } catch (error) {
       setError(error.message || 'Failed to save link');
@@ -208,36 +312,153 @@ const LinkForm = ({
                 </div>
 
                 <div>
-                  <label htmlFor="category" className="block text-sm font-medium text-slate-300 mb-1">
+                  <label className="block text-sm font-medium text-slate-300 mb-1">
                     Category
                   </label>
-                  <div className="relative">
-                    <Layout className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-                    <select
-                      id="category"
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                      className="pl-10 w-full bg-[#0a1226] border border-indigo-500/20 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 appearance-none transition-all"
-                      required
+                  <div className="relative category-menu-container">
+                    <button
+                      ref={triggerRef}
+                      type="button"
+                      role="combobox"
+                      aria-expanded={isCategoryMenuOpen}
+                      aria-haspopup="listbox"
+                      onKeyDown={handleKeyDown}
+                      onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
+                      className={`w-full flex items-center justify-between bg-[#0a1226] border rounded-lg py-2 px-3 text-sm text-slate-200 outline-none transition-all duration-300 relative z-10
+                        ${isCategoryMenuOpen ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-indigo-500/20 hover:border-indigo-500/40'}
+                      `}
                     >
-                      <option value="" disabled>Select a category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
-                      <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
+                      <span className="truncate">
+                        {categoryId === 'new_category' ? 'Add New Category...' : (categories.find(c => c.id === categoryId)?.name || 'Select a category')}
+                      </span>
+                      <svg className={`h-4 w-4 text-slate-400 transition-transform duration-300 ${isCategoryMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    </div>
+                    </button>
+
+                    <AnimatePresence>
+                      {isCategoryMenuOpen && (
+                        <motion.div
+                          role="listbox"
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 8 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute bottom-full left-0 mb-1.5 w-full rounded-xl bg-[#040b16]/95 backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] border border-indigo-500/20 py-1.5 z-30 flex flex-col"
+                        >
+                          {/* listRef on the inner scrollable div so scrollIntoView works */}
+                          <div ref={listRef} className="max-h-[160px] overflow-y-auto">
+                            {categories.filter(c => c.id !== 'all').map((category, idx) => {
+                              const isSelected = categoryId === category.id;
+                              const isHighlighted = highlightedIndex === idx;
+                              return (
+                                <button
+                                  key={category.id}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isSelected}
+                                  tabIndex={-1}
+                                  onMouseEnter={() => setHighlightedIndex(idx)}
+                                  onClick={() => {
+                                    setCategoryId(category.id);
+                                    setIsCategoryMenuOpen(false);
+                                  }}
+                                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center justify-between group ${isSelected ? 'bg-indigo-500/20 text-indigo-300' : isHighlighted ? 'bg-white/10 text-slate-200' : 'text-slate-300'}`}
+                                >
+                                  <span className="truncate">{category.name}</span>
+                                  {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <div className="border-t border-indigo-500/10 mt-1 pt-1.5" />
+
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={categoryId === 'new_category'}
+                            tabIndex={-1}
+                            onMouseEnter={() => setHighlightedIndex(categories.filter(c => c.id !== 'all').length)}
+                            onClick={() => {
+                              setCategoryId('new_category');
+                              setIsCategoryMenuOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm font-semibold transition-colors flex items-center justify-between ${categoryId === 'new_category' ? 'bg-indigo-500/20 text-indigo-300' : highlightedIndex === categories.filter(c => c.id !== 'all').length ? 'bg-white/10 text-slate-200' : 'text-indigo-400'}`}
+                          >
+                            <span>Add New Category...</span>
+                            {categoryId === 'new_category' && <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.5)]"></span>}
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
+
+                <AnimatePresence>
+                  {categoryId === 'new_category' && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                      animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
+                      exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden border border-indigo-500/20 bg-[#0a1226]/50 rounded-xl p-4 space-y-4"
+                    >
+                      <div>
+                        <label htmlFor="newCategoryName" className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                          New Category Name
+                        </label>
+                        <div className="relative">
+                          <Edit3 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <input
+                            id="newCategoryName"
+                            type="text"
+                            value={newCategoryName}
+                            onChange={(e) => setNewCategoryName(e.target.value)}
+                            className="pl-9 w-full bg-[#0a1226] border border-indigo-500/20 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
+                            placeholder="e.g. Reference, Entertainment"
+                            required={categoryId === 'new_category'}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Icon</span>
+                          <div className="grid grid-cols-4 gap-1.5 bg-[#040b16] p-1.5 rounded-lg border border-indigo-500/10">
+                            {Object.entries(iconMap).map(([key, IconComponent]) => (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => setNewCategoryIcon(key)}
+                                className={`p-1.5 rounded-md flex items-center justify-center transition-all ${newCategoryIcon === key ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-slate-400 hover:bg-white/5 hover:text-slate-200 border border-transparent'}`}
+                                title={key}
+                              >
+                                <IconComponent className="h-4 w-4" />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Color</span>
+                          <div className="grid grid-cols-4 gap-1.5 bg-[#040b16] p-1.5 rounded-lg border border-indigo-500/10">
+                            {colorOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setNewCategoryColor(option.value)}
+                                className={`h-7 w-7 rounded-full flex items-center justify-center transition-all ${newCategoryColor === option.value ? 'ring-2 ring-white scale-105' : 'hover:scale-105'}`}
+                              >
+                                <div className={`w-4 h-4 rounded-full ${option.bg} shadow-md`}></div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <div>
                   <label className="flex items-center space-x-3 cursor-pointer w-fit group">
